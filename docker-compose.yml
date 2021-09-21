@@ -34,12 +34,10 @@ services:
       dockerfile: Dockerfile.toolbox
     depends_on:
     - movies-api-java
-    - movies-api-py
   small-load:
     build:
       context: .
       dockerfile: Dockerfile.toolbox
     depends_on:
     - movies-api-java
-    - movies-api-py
     command: "sh -c 'while true; do curl -s http://movies-api-java:8080/movies?q=wars; sleep 50; done'"
