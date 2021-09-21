@@ -20,5 +20,5 @@ processResources {
 
 application {
     mainClassName = 'movies.Server'
-    applicationDefaultJvmArgs []
+    applicationDefaultJvmArgs = []
 }
