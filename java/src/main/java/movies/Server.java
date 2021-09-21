@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
+import java.util.Random;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -33,6 +34,7 @@ public class Server {
 
 	public static void main(String[] args) {
 		port(8080);
+		get("/", Server::randomMovieEndpoint);
 		get("/movies", Server::moviesEndpoint);
 
 		exception(Exception.class, (exception, request, response) -> {
@@ -54,6 +56,12 @@ public class Server {
 			movies = movies.filter(m -> Pattern.matches(".*" + query.toUpperCase() + ".*", m.title.toUpperCase()));
 		}
 		return replyJSON(res, movies);
+	}
+
+	private static Object randomMovieEndpoint(Request req, Response res) {
+		var allMovies = getMovies();
+		var randomMovie = allMovies.get(new Random().nextInt(allMovies.size()));
+		return replyJSON(res, randomMovie);
 	}
 
 	private static Stream<Movie> sortByDescReleaseDate(Stream<Movie> movies) {
