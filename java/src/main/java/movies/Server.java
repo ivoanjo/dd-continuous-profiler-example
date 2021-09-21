@@ -33,7 +33,7 @@ public class Server {
 	}
 
 	public static void main(String[] args) {
-		port(8080);
+		port(8081);
 		get("/", Server::randomMovieEndpoint);
 		get("/movies", Server::moviesEndpoint);
 		get("/sleep", Server::sleepEndpoint);
