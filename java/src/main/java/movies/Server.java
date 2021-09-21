@@ -36,6 +36,7 @@ public class Server {
 		port(8080);
 		get("/", Server::randomMovieEndpoint);
 		get("/movies", Server::moviesEndpoint);
+		get("/sleep", Server::sleepEndpoint);
 
 		exception(Exception.class, (exception, request, response) -> {
 			System.err.println(exception.getMessage());
@@ -62,6 +63,13 @@ public class Server {
 		var allMovies = getMovies();
 		var randomMovie = allMovies.get(new Random().nextInt(allMovies.size()));
 		return replyJSON(res, randomMovie);
+	}
+
+	private static Object sleepEndpoint(Request req, Response res) {
+		try {
+			java.util.concurrent.TimeUnit.SECONDS.sleep(3);
+		} catch (InterruptedException e) { }
+		return replyJSON(res, "This is a slow endpoint");
 	}
 
 	private static Stream<Movie> sortByDescReleaseDate(Stream<Movie> movies) {
