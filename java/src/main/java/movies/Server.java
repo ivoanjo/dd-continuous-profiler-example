@@ -29,7 +29,7 @@ public class Server {
 	private static volatile List<Movie> CACHED_MOVIES;
 
 	static {
-		GSON = new GsonBuilder().setLenient().create();
+		GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
 	}
 
 	public static void main(String[] args) {
