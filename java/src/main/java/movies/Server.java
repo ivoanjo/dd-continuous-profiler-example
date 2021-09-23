@@ -45,8 +45,8 @@ public class Server {
 	}
 
 	@Trace(operationName = "http.req", resourceName = "/movies")
-	private static Object moviesEndpoint(Request req, Response res) {
-		var movies = getMovies().stream();
+	private static Object moviesEndpoint(Request req, Response res) throws IOException {
+		var movies = Movie.getAll().stream();
 		movies = sortByDescReleaseDate(movies);
 		var query = req.queryParamOrDefault("q", req.queryParams("query"));
 		if (query != null) {
@@ -59,8 +59,8 @@ public class Server {
 		return replyJSON(res, movies);
 	}
 
-	private static Object randomMovieEndpoint(Request req, Response res) {
-		var allMovies = getMovies();
+	private static Object randomMovieEndpoint(Request req, Response res) throws IOException {
+		var allMovies = Movie.getAll();
 		var randomMovie = allMovies.get(new Random().nextInt(allMovies.size()));
 		return replyJSON(res, randomMovie);
 	}
@@ -77,9 +77,9 @@ public class Server {
 			// Problem: We are parsing a datetime for each item to be sorted.
 			// Example Solution:
 			//   Since date is in isoformat (yyyy-mm-dd) already, that one sorts nicely with normal string sorting
-			//   `return m.releaseDate`
+			//   `return m.release_date`
 			try {
-				return LocalDate.parse(m.releaseDate);
+				return LocalDate.parse(m.release_date);
 			} catch (Exception e) {
 				return LocalDate.MIN;
 			}
@@ -93,14 +93,6 @@ public class Server {
 	private static Object replyJSON(Response res, Object data) {
 		res.type("application/json");
 		return GSON.toJson(data);
-	}
-
-	private static List<Movie> getMovies() {
-		if (CACHED_MOVIES != null) {
-			return CACHED_MOVIES;
-		}
-
-		return loadMovies();
 	}
 
 	private synchronized static List<Movie> loadMovies() {
@@ -117,13 +109,5 @@ public class Server {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to load movie data");
 		}
-	}
-
-	public static class Movie {
-		public String title;
-		@SerializedName("vote_average")
-		public double rating;
-		@SerializedName("release_date")
-		public String releaseDate;
 	}
 }
