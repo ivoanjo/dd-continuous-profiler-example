@@ -51,6 +51,9 @@ import org.bson.Document;
 
 import java.util.Arrays;
 
+import java.nio.file.Path;
+
+
 public class Server {
 	private static final Gson GSON;
 	// Problem: you parse Movies, Ratings, Keywords, and Credits all the time
@@ -76,6 +79,7 @@ public class Server {
 		get("/ratings", Server::ratingsEndpoint);
 		get("/sleep", Server::sleepEndpoint);
 		get("/mongo", Server::mongoEndpoint);
+		get("/seedmongo", Server::seedMongo);
 
 		exception(Exception.class, (exception, request, response) -> {
 			System.err.println(exception.getMessage());
@@ -160,9 +164,25 @@ public class Server {
 		var db = mongoClient.getDatabase("TestDatabase");
 		var collection = db.getCollection("TestCollection");
 
-		collection.insertOne(new Document("name", "Another test"));
+		var alldocs = new java.util.ArrayList();
 
-		return replyJSON(res, collection.find().first().toJson());
+		collection.find().forEach(doc -> alldocs.add(doc));
+
+		return replyJSON(res, alldocs.size());
+	}
+
+	private static Object seedMongo(Request req, Response res) {
+		MongoClient mongoClient = MongoClients.create();
+		var db = mongoClient.getDatabase("TestDatabase");
+		var collection = db.getCollection("TestCollection");
+
+		var alldocs = Parser.parse(Path.of("movies.json"), d -> !Boolean.parseBoolean((String)d.get("adult")), Document::new);
+
+		System.out.println("Parsed " + alldocs.size());
+
+		collection.insertMany(alldocs);
+
+		return replyJSON(res, "OK");
 	}
 
 	// $> time curl 'localhost:8081/ratings?q=world' 1>/dev/null
