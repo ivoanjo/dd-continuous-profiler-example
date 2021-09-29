@@ -26,6 +26,31 @@ import datadog.trace.api.Trace;
 import spark.Request;
 import spark.Response;
 
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoClient;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.ConnectionString;
+import com.mongodb.ServerAddress;
+import com.mongodb.MongoCredential;
+import com.mongodb.MongoClientSettings;
+
+import com.mongodb.*;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Filters;
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Projections.*;
+import com.mongodb.client.model.Sorts;
+import java.util.Arrays;
+import java.util.function.Consumer;
+import org.bson.Document;
+
+import java.util.Arrays;
+
 public class Server {
 	private static final Gson GSON;
 	// Problem: you parse Movies, Ratings, Keywords, and Credits all the time
@@ -50,6 +75,7 @@ public class Server {
 		get("/credits", Server::creditsEndpoint);
 		get("/ratings", Server::ratingsEndpoint);
 		get("/sleep", Server::sleepEndpoint);
+		get("/mongo", Server::mongoEndpoint);
 
 		exception(Exception.class, (exception, request, response) -> {
 			System.err.println(exception.getMessage());
@@ -127,6 +153,16 @@ public class Server {
 			this.movie = movie;
 			this.ratings = ratings;
 		}
+	}
+
+	private static Object mongoEndpoint(Request req, Response res) {
+		MongoClient mongoClient = MongoClients.create();
+		var db = mongoClient.getDatabase("TestDatabase");
+		var collection = db.getCollection("TestCollection");
+
+		collection.insertOne(new Document("name", "Another test"));
+
+		return replyJSON(res, collection.find().first().toJson());
 	}
 
 	// $> time curl 'localhost:8081/ratings?q=world' 1>/dev/null
