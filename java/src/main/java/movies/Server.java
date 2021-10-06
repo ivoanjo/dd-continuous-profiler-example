@@ -60,12 +60,13 @@ public class Server {
 	private static volatile Supplier<List<Movie>> MOVIES = () -> Movie.getAll();
 	private static volatile Supplier<List<Rating>> RATINGS = () -> Rating.getAll();
 	private static volatile Supplier<List<Keyword>> KEYWORDS = () -> Keyword.getAll();
-	private static volatile Supplier<List<Credit>> CREDITS = () -> Credit.getAll();
+	private static volatile Supplier<List<Credit>> CREDITS = () -> getAllFromMongo();
 	// Solution: cache them:
 	// private static volatile Supplier<List<Movie>> MOVIES = new CachedSupplier(() -> Movie.getAll());
 	// private static volatile Supplier<List<Rating>> RATINGS = new CachedSupplier(() -> Rating.getAll());
 	// private static volatile Supplier<List<Keyword>> KEYWORDS = new CachedSupplier(() -> Keyword.getAll());
-	// private static volatile Supplier<List<Credit>> CREDITS = new CachedSupplier(() -> Credit.getAll());
+	// // private static volatile Supplier<List<Credit>> CREDITS = new CachedSupplier(() -> Credit.getAll());
+	// 	private static volatile Supplier<List<Credit>> CREDITS = new CachedSupplier(() -> getAllFromMongo());
 
 	static {
 		GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
@@ -128,7 +129,7 @@ public class Server {
 	// $> time curl 'localhost:8081/credits?q=the' 1>/dev/null
 	private static Object creditsEndpoint(Request req, Response res) {
 		var movies = MOVIES.get().stream();
-		movies = sortByDescReleaseDate(movies);
+		// movies = sortByDescReleaseDate(movies);
 
 		var query = req.queryParamOrDefault("q", req.queryParams("query"));
 		if (query != null) {
@@ -138,7 +139,7 @@ public class Server {
 		}
 
 		// Problem: We are doing a O(n^2) search
-		var moviesWithCredits = movies.map(m -> new MovieWithCredits(m, CREDITS.get().stream().filter(c -> c.id.equals(m.id)).collect(Collectors.toList())));
+		var moviesWithCredits = movies.map(movie -> new MovieWithCredits(movie, creditsForMovie(movie)));
 		// Solution: Use a map with O(1) access time, reducing the overall complexity to O(n)
 		// var credits = CREDITS_BY_MOVIEID.get();
 		// var moviesWithCredits = movies.map(m -> new MovieWithCredits(m, credits.get(m.id))).collect(Collectors.toList());
@@ -146,7 +147,13 @@ public class Server {
 		return replyJSON(res, moviesWithCredits);
 	}
 
-	private static volatile Supplier<Map<Integer, List<Credit>>> CREDITS_BY_MOVIEID = () -> CREDITS.get().stream().collect(Collectors.groupingBy(c -> c.id));
+	private static List<Credit> creditsForMovie(Movie movie) {
+		return CREDITS.get().stream().filter(c -> c.id.equals(movie.id)).collect(Collectors.toList());
+		// return CREDITS_BY_MOVIEID.get().get(movie.id);
+	}
+
+	// private static volatile Supplier<Map<Integer, List<Credit>>> CREDITS_BY_MOVIEID = () -> CREDITS.get().stream().collect(Collectors.groupingBy(c -> c.id));
+	private static volatile Supplier<Map<Integer, List<Credit>>> CREDITS_BY_MOVIEID = new CachedSupplier(() -> CREDITS.get().stream().collect(Collectors.groupingBy(c -> c.id)));
 
 	private static class MovieWithRatings {
 
@@ -161,8 +168,8 @@ public class Server {
 
 	private static Object mongoEndpoint(Request req, Response res) {
 		MongoClient mongoClient = MongoClients.create();
-		var db = mongoClient.getDatabase("TestDatabase");
-		var collection = db.getCollection("TestCollection");
+		var db = mongoClient.getDatabase("moviesDB");
+		var collection = db.getCollection("credits");
 
 		var alldocs = new java.util.ArrayList();
 
@@ -173,16 +180,24 @@ public class Server {
 
 	private static Object seedMongo(Request req, Response res) {
 		MongoClient mongoClient = MongoClients.create();
-		var db = mongoClient.getDatabase("TestDatabase");
-		var collection = db.getCollection("TestCollection");
+		var db = mongoClient.getDatabase("moviesDB");
+		var collection = db.getCollection("credits");
 
-		var alldocs = Parser.parse(Path.of("movies.json"), d -> !Boolean.parseBoolean((String)d.get("adult")), Document::new);
+		var allcredits = Parser.parse(Path.of("credits.json"), Document::new);
 
-		System.out.println("Parsed " + alldocs.size());
+		System.out.println("Parsed " + allcredits.size());
 
-		collection.insertMany(alldocs);
+		collection.insertMany(allcredits);
 
 		return replyJSON(res, "OK");
+	}
+
+	private static List<Credit> getAllFromMongo() {
+		var mongoClient = MongoClients.create();
+		var moviesDatabase = mongoClient.getDatabase("moviesDB");
+		var creditsCollection = moviesDatabase.getCollection("credits");
+
+		return java.util.stream.StreamSupport.stream(creditsCollection.find().batchSize(50_000).map(Credit::new).spliterator(), false).collect(Collectors.toList());
 	}
 
 	// $> time curl 'localhost:8081/ratings?q=world' 1>/dev/null
