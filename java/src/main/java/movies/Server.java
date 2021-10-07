@@ -61,6 +61,7 @@ public class Server {
 	private static volatile Supplier<List<Rating>> RATINGS = () -> Rating.getAll();
 	private static volatile Supplier<List<Keyword>> KEYWORDS = () -> Keyword.getAll();
 	private static volatile Supplier<List<Credit>> CREDITS = () -> getAllFromMongo();
+	// Placeholder for future improvement
 	// Solution: cache them:
 	// private static volatile Supplier<List<Movie>> MOVIES = new CachedSupplier(() -> Movie.getAll());
 	// private static volatile Supplier<List<Rating>> RATINGS = new CachedSupplier(() -> Rating.getAll());
@@ -156,7 +157,7 @@ public class Server {
 	}
 
 	// private static volatile Supplier<Map<Integer, List<Credit>>> CREDITS_BY_MOVIEID = () -> CREDITS.get().stream().collect(Collectors.groupingBy(c -> c.id));
-	private static volatile Supplier<Map<Integer, List<Credit>>> CREDITS_BY_MOVIEID = new CachedSupplier(() -> CREDITS.get().stream().collect(Collectors.groupingBy(c -> c.id)));
+	// private static volatile Supplier<Map<Integer, List<Credit>>> CREDITS_BY_MOVIEID = new CachedSupplier(() -> CREDITS.get().stream().collect(Collectors.groupingBy(c -> c.id)));
 
 	private static class MovieWithRatings {
 
