@@ -22,5 +22,5 @@ processResources {
 
 application {
     mainClassName = 'movies.Server'
-    applicationDefaultJvmArgs = ['-Xmx4g', '-Xms4g']
+    applicationDefaultJvmArgs = ['-Xmx3g', '-Xms3g']
 }
