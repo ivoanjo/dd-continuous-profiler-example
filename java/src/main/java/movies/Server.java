@@ -82,6 +82,9 @@ public class Server {
 		get("/mongo", Server::mongoEndpoint);
 		get("/seedmongo", Server::seedMongo);
 
+		// Warm up credits cache
+		CREDITS.get();
+
 		exception(Exception.class, (exception, request, response) -> {
 			System.err.println(exception.getMessage());
 			exception.printStackTrace();
