@@ -57,13 +57,13 @@ import java.nio.file.Path;
 public class Server {
 	private static final Gson GSON;
 	// Problem: you parse Movies, Ratings, Keywords, and Credits all the time
-	private static volatile Supplier<List<Movie>> MOVIES = () -> Movie.getAll();
+	//private static volatile Supplier<List<Movie>> MOVIES = () -> Movie.getAll();
 	private static volatile Supplier<List<Rating>> RATINGS = () -> Rating.getAll();
 	private static volatile Supplier<List<Keyword>> KEYWORDS = () -> Keyword.getAll();
 	private static volatile Supplier<List<Credit>> CREDITS = () -> getAllFromMongo();
 	// Placeholder for future improvement
 	// Solution: cache them:
-	// private static volatile Supplier<List<Movie>> MOVIES = new CachedSupplier(() -> Movie.getAll());
+	private static volatile Supplier<List<Movie>> MOVIES = new CachedSupplier(() -> Movie.getAll());
 	// private static volatile Supplier<List<Rating>> RATINGS = new CachedSupplier(() -> Rating.getAll());
 	// private static volatile Supplier<List<Keyword>> KEYWORDS = new CachedSupplier(() -> Keyword.getAll());
 	// // private static volatile Supplier<List<Credit>> CREDITS = new CachedSupplier(() -> Credit.getAll());
@@ -83,7 +83,8 @@ public class Server {
 		get("/mongo", Server::mongoEndpoint);
 		get("/seedmongo", Server::seedMongo);
 
-		// Warm up credits cache
+		// Warm up caches
+		MOVIES.get();
 		CREDITS.get();
 
 		exception(Exception.class, (exception, request, response) -> {
